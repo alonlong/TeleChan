@@ -2,13 +2,15 @@ package config
 
 import (
 	"io/ioutil"
+	"time"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
 // server fields
 type serverStruct struct {
-	ListenAddr string `yaml:"listen_addr"`
+	ListenAddr  string        `yaml:"listen_addr"`
+	TokenExpire time.Duration `yaml:"token_expire"`
 }
 
 // db fields

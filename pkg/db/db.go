@@ -2,10 +2,10 @@ package db
 
 import (
 	"TeleChan/pkg/config"
-	"database/sql"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 // Handler for the db operations
 type Handler struct {
 	settings *config.Config // database connection config
-	db       *sql.DB        // mysql database object
+	db       *gorm.DB       // mysql database object
 }
 
 // NewHandler returns a new database operation handler
@@ -26,22 +26,24 @@ func NewHandler(settings *config.Config) *Handler {
 	s := &Handler{settings: settings}
 
 	// init the database connections
-	source := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=utf8",
+	source := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
 		settings.DB.User,
 		settings.DB.Passwd,
 		settings.DB.Host,
 		settings.DB.Port,
 		settings.DB.Name,
 	)
-	db, err := sql.Open("mysql", source)
+	db, err := gorm.Open("mysql", source)
 	if err != nil {
 		panic(err)
 	}
-	db.SetMaxOpenConns(DefaultMaxOpenConns)
-	db.SetMaxIdleConns(DefaultMaxIdleConns)
-	if err := db.Ping(); err != nil {
+	db.DB().SetMaxOpenConns(DefaultMaxOpenConns)
+	db.DB().SetMaxIdleConns(DefaultMaxIdleConns)
+	if err := db.DB().Ping(); err != nil {
 		panic(err)
 	}
+	// init the db for handler
+	s.db = db
 
 	return s
 }

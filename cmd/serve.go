@@ -1,29 +1,17 @@
 package cmd
 
 import (
-	"net"
-	"os"
-	"os/signal"
 	"TeleChan/pkg/api"
 	"TeleChan/pkg/config"
 	"TeleChan/pkg/log"
+	"os"
+	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 )
-
-const (
-	// DefaultKeepaliveMinTime - if a client pings more than once every 5 seconds, terminate the connection
-	DefaultKeepaliveMinTime = 5
-)
-
-var kaep = keepalive.EnforcementPolicy{
-	MinTime:             DefaultKeepaliveMinTime * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
-	PermitWithoutStream: true,                                  // Allow pings even when there are no active streams
-}
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
@@ -37,27 +25,6 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(serveCmd)
-}
-
-// start a grpc server
-func startGRPCServer(settings *config.Config, impl *api.Service , wg *sync.WaitGroup) (*grpc.Server, error) {
-	lis, err := net.Listen("tcp", settings.Server.ListenAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	s := grpc.NewServer(grpc.KeepaliveEnforcementPolicy(kaep))
-	api.RegisterTeleChanServer(s, impl)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := s.Serve(lis); err != nil {
-			log.Infof("grpc serve: %v\n", err)
-		}
-	}()
-
-	return s, nil
 }
 
 // updateOptions updates the log options
@@ -102,14 +69,11 @@ func serve() {
 	}
 
 	// create an api implemention for grpc server
-	impl := api.NewService(&settings)
+	service := api.NewService(&settings)
 
 	var wg sync.WaitGroup
 	// start a server with listen address
-	grpcServer, err := startGRPCServer(&settings, impl, &wg)
-	if err != nil {
-		panic(err)
-	}
+	service.Start(&wg)
 
 	log.Info("server is started")
 
@@ -126,8 +90,8 @@ func serve() {
 
 			start := time.Now()
 
-			// close the grpc server gracefully
-			grpcServer.GracefulStop()
+			// stop the grpc server gracefully
+			service.Stop()
 
 			log.Info("server is stopped")
 
