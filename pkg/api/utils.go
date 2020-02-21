@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -26,7 +27,12 @@ func (s *apiExecutor) getUserId(ctx context.Context) string {
 	md, _ := metadata.FromIncomingContext(ctx)
 	res := md.Get(headerUser)
 	if len(res) == 0 {
-		panic("user-id is not found")
+		panic("user id is not found")
 	}
 	return res[0]
+}
+
+// create a new uuid
+func newUUID() string {
+	return uuid.Must(uuid.NewV4()).String()
 }

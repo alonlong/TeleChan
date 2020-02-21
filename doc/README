@@ -1,0 +1,13 @@
+## Start the grpc server
+./TeleChan serve
+
+## Sign up
+./TeleChan SignUp --address $address --email $email --password $password
+
+## Sign In
+
+./TeleChan SignIn --address $address --email $email --password $password
+
+## Refresh the token
+./TeleChan Refresh --address $address --token $token
+

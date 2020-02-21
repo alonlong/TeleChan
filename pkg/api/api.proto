@@ -11,7 +11,7 @@ message SignUpRequest {
     User user = 1;
 }
 
-message SignUpReply {
+message SuccessReply {
 }
 
 message SignInRequest {
@@ -29,8 +29,48 @@ message RefreshReply {
     string refreshToken = 1;
 }
 
+message NewChanRequest {
+    string name = 1;
+}
+
+message JoinChanRequest {
+    string name = 1;
+}
+
+message Channel {
+    string id = 1;
+    string name = 2;
+    bool owned = 3;
+}
+
+message GetChansRequest {
+}
+
+message SearchChansRequest {
+    string input = 1;
+}
+
+message ChansReply {
+    repeated Channel channels = 1;
+}
+
+message ClientUpdate {
+}
+
+message ServerUpdate {
+}
+
 service TeleChan {
-    rpc SignUp (SignUpRequest) returns (SignUpReply) {}
+    rpc SignUp (SignUpRequest) returns (SuccessReply) {}
     rpc SignIn (SignInRequest) returns (SignInReply) {}
     rpc Refresh (RefreshRequest) returns (RefreshReply) {}
+
+    rpc NewChan (NewChanRequest) returns (SuccessReply) {}
+    rpc JoinChan (JoinChanRequest) returns (SuccessReply) {}
+    rpc GetChans (GetChansRequest) returns (ChansReply) {}
+    rpc SearchChans(SearchChansRequest) returns (ChansReply) {}
+    rpc Communicate(stream ClientUpdate) returns (stream ServerUpdate) {}
+    
+    // rpc LeaveChan(LeaveChanRequest) returns (LeaveChanReply) {}
+    // rpc Publish(PublishRequest) returns (PublishReply) {}
 }

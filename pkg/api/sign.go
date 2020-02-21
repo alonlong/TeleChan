@@ -18,20 +18,20 @@ var (
 
 // Create a struct that will be encoded to a JWT
 type Claims struct {
-	Email string `json:"email"`
+	UserID string `json:"user_id"`
 	jwt.StandardClaims
 }
 
 // Refresh - refresh a new token with the current token
 func (e *apiExecutor) Refresh(ctx context.Context, request *RefreshRequest) (*RefreshReply, error) {
 	// fetch the user id from context
-	email := e.getUserId(ctx)
+	userID := e.getUserId(ctx)
 
 	// declare the expiration time of the token
 	expiration := time.Now().Add(e.settings.Server.TokenExpire * time.Minute)
 	// create the jwt claims, which include the username and expiration time
 	claims := &Claims{
-		Email: email,
+		UserID: userID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiration.Unix(),
 		},
@@ -47,7 +47,7 @@ func (e *apiExecutor) Refresh(ctx context.Context, request *RefreshRequest) (*Re
 }
 
 // SignUp - signup with user's email and password, need to check if it's existed in database
-func (e *apiExecutor) SignUp(ctx context.Context, request *SignUpRequest) (*SignUpReply, error) {
+func (e *apiExecutor) SignUp(ctx context.Context, request *SignUpRequest) (*SuccessReply, error) {
 	if request.User.Email == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "Email is empty")
 	}
@@ -56,7 +56,7 @@ func (e *apiExecutor) SignUp(ctx context.Context, request *SignUpRequest) (*Sign
 	}
 
 	// query the user from database by email
-	u, err := e.handler.FindUserByKey(request.User.Email)
+	u, err := e.handler.FindUserByEmail(request.User.Email)
 	if err != nil {
 		log.Errorf("Find user by email %s: %v", request.User.Email, err)
 		return nil, status.Errorf(codes.Internal, "Find user: %v", err)
@@ -66,6 +66,7 @@ func (e *apiExecutor) SignUp(ctx context.Context, request *SignUpRequest) (*Sign
 	}
 
 	u = &model.User{
+		UserID:   newUUID(),
 		Email:    request.User.Email,
 		Password: request.User.Password,
 	}
@@ -75,7 +76,7 @@ func (e *apiExecutor) SignUp(ctx context.Context, request *SignUpRequest) (*Sign
 		return nil, status.Errorf(codes.Internal, "Create user: %v", err)
 	}
 
-	return &SignUpReply{}, nil
+	return &SuccessReply{}, nil
 }
 
 // SignIn - signin with user's email and password, after success, return a jwt token
@@ -88,7 +89,7 @@ func (e *apiExecutor) SignIn(ctx context.Context, request *SignInRequest) (*Sign
 	}
 
 	// query the user from database by email
-	u, err := e.handler.FindUserByKey(request.User.Email)
+	u, err := e.handler.FindUserByEmail(request.User.Email)
 	if err != nil {
 		log.Errorf("Find user by email %s: %v", request.User.Email, err)
 		return nil, status.Errorf(codes.Internal, "Find user: %v", err)
@@ -106,7 +107,7 @@ func (e *apiExecutor) SignIn(ctx context.Context, request *SignInRequest) (*Sign
 	expiration := time.Now().Add(e.settings.Server.TokenExpire * time.Minute)
 	// create the jwt claims, which include the username and expiration time
 	claims := &Claims{
-		Email: request.User.Email,
+		UserID: u.UserID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiration.Unix(),
 		},

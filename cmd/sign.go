@@ -10,15 +10,6 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var (
-	address  string
-	email    string
-	password string
-	token    string
-
-	authorization = "authorization"
-)
-
 func init() {
 	// command parameters for SignUp subcommand
 	SignUpCmd.PersistentFlags().StringVar(&address, "address", "localhost:15001", "TeleChan server's address")

@@ -80,7 +80,7 @@ func (e *apiExecutor) auth(ctx context.Context) (context.Context, error) {
 	}
 
 	// append the 'user-id' to context
-	newCtx := metadata.NewIncomingContext(ctx, metadata.Pairs(headerUser, claims.Email))
+	newCtx := metadata.NewIncomingContext(ctx, metadata.Pairs(headerUser, claims.UserID))
 
 	return newCtx, nil
 }
