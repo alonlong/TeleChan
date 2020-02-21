@@ -23,12 +23,24 @@ func init() {
 	// command parameters for GetChans subcommand
 	GetChansCmd.PersistentFlags().StringVar(&address, "address", "localhost:15001", "TeleChan server's address")
 	GetChansCmd.PersistentFlags().StringVar(&token, "token", "", "User's token for GetChans")
+
+	// command parameters for SearchChans subcommand
+	SearchChansCmd.PersistentFlags().StringVar(&address, "address", "localhost:15001", "TeleChan server's address")
+	SearchChansCmd.PersistentFlags().StringVar(&token, "token", "", "User's token for SearchChans")
+	SearchChansCmd.PersistentFlags().StringVar(&search, "search", "", "User's input for SearchChans")
+
+	// command parameters for LeaveChan subcommand
+	LeaveChanCmd.PersistentFlags().StringVar(&address, "address", "localhost:15001", "TeleChan server's address")
+	LeaveChanCmd.PersistentFlags().StringVar(&channelName, "name", "Go", "User's channel name for LeaveChan")
+	LeaveChanCmd.PersistentFlags().StringVar(&token, "token", "", "User's token for LeaveChan")
 }
 
 func init() {
 	RootCmd.AddCommand(NewChanCmd)
 	RootCmd.AddCommand(JoinChanCmd)
 	RootCmd.AddCommand(GetChansCmd)
+	RootCmd.AddCommand(SearchChansCmd)
+	RootCmd.AddCommand(LeaveChanCmd)
 }
 
 // NewChanCmd subcommand
@@ -81,6 +93,34 @@ var JoinChanCmd = &cobra.Command{
 	},
 }
 
+// SearchChansCmd subcommand
+var SearchChansCmd = &cobra.Command{
+	Use:   "SearchChans",
+	Short: "User search channels",
+	Run: func(cmd *cobra.Command, args []string) {
+		// create the grpc client
+		client, err := newClient(address)
+		if err != nil {
+			fmt.Printf("New client: %v\n", err)
+			return
+		}
+
+		request := &api.SearchChansRequest{
+			Input: search,
+		}
+		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(authorization, token))
+		// call the SearchChans interface
+		reply, err := client.SearchChans(ctx, request)
+		if err != nil {
+			fmt.Printf("Search channels: %v\n", err)
+			return
+		}
+		for _, channel := range reply.Channels {
+			fmt.Printf("Channel id: %s, name: %s, owned: %v\n", channel.Id, channel.Name, channel.Owned)
+		}
+	},
+}
+
 // GetChansCmd subcommand
 var GetChansCmd = &cobra.Command{
 	Use:   "GetChans",
@@ -102,7 +142,32 @@ var GetChansCmd = &cobra.Command{
 			return
 		}
 		for _, channel := range reply.Channels {
-			fmt.Printf("Channel id: %s, name: %s\n", channel.Id, channel.Name)
+			fmt.Printf("Channel id: %s, name: %s, owned: %v\n", channel.Id, channel.Name, channel.Owned)
 		}
+	},
+}
+
+// LeaveChanCmd subcommand
+var LeaveChanCmd = &cobra.Command{
+	Use:   "LeaveChan",
+	Short: "User leave a special channel",
+	Run: func(cmd *cobra.Command, args []string) {
+		// create the grpc client
+		client, err := newClient(address)
+		if err != nil {
+			fmt.Printf("New client: %v\n", err)
+			return
+		}
+
+		request := &api.LeaveChanRequest{
+			Name: channelName,
+		}
+		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(authorization, token))
+		// call the LeaveChan interface
+		if _, err := client.LeaveChan(ctx, request); err != nil {
+			fmt.Printf("Leave channel: %v\n", err)
+			return
+		}
+		fmt.Println("Leave channel success")
 	},
 }

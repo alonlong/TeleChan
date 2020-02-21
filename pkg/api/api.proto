@@ -54,6 +54,10 @@ message ChansReply {
     repeated Channel channels = 1;
 }
 
+message LeaveChanRequest {
+    string name = 1;
+}
+
 message ClientUpdate {
 }
 
@@ -69,8 +73,8 @@ service TeleChan {
     rpc JoinChan (JoinChanRequest) returns (SuccessReply) {}
     rpc GetChans (GetChansRequest) returns (ChansReply) {}
     rpc SearchChans(SearchChansRequest) returns (ChansReply) {}
-    rpc Communicate(stream ClientUpdate) returns (stream ServerUpdate) {}
+    rpc LeaveChan(LeaveChanRequest) returns (SuccessReply) {}
     
-    // rpc LeaveChan(LeaveChanRequest) returns (LeaveChanReply) {}
+    rpc Communicate(stream ClientUpdate) returns (stream ServerUpdate) {}
     // rpc Publish(PublishRequest) returns (PublishReply) {}
 }

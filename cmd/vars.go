@@ -6,6 +6,7 @@ var (
 	password    string
 	token       string
 	channelName string
+	search      string
 
 	authorization = "authorization"
 )

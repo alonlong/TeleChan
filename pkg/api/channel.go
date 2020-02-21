@@ -125,5 +125,67 @@ func (e *apiExecutor) GetChans(ctx context.Context, request *GetChansRequest) (*
 
 // SearchChans - search the channels by input
 func (e *apiExecutor) SearchChans(ctx context.Context, request *SearchChansRequest) (*ChansReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchChans not implemented")
+	if request.Input == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "Search input is empty")
+	}
+
+	// fetch the user id from context
+	userID := e.getUserId(ctx)
+
+	// get the channels by like input
+	us, err := e.handler.FindChannelsByLikeName(request.Input)
+	if err != nil {
+		log.Errorf("Find channel by like %s: %v", request.Input, err)
+		return nil, status.Errorf(codes.Internal, "Find channel: %v", err)
+	}
+
+	// prepare the channels
+	chans := []*Channel{}
+	for _, u := range us {
+		chans = append(chans, &Channel{
+			Id:    u.ChannelID,
+			Name:  u.Name,
+			Owned: (u.UserID == userID),
+		})
+	}
+	return &ChansReply{Channels: chans}, nil
+}
+
+// LeaveChan - leave the joined channel
+func (e *apiExecutor) LeaveChan(ctx context.Context, request *LeaveChanRequest) (*SuccessReply, error) {
+	if request.Name == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "Channel name is empty")
+	}
+
+	userID := e.getUserId(ctx)
+	// query the channel from database by name
+	u, err := e.handler.FindChannelByName(request.Name)
+	if err != nil {
+		log.Errorf("Find channel by name %s: %v", request.Name, err)
+		return nil, status.Errorf(codes.Internal, "Find channel: %v", err)
+	}
+	if u == nil {
+		return nil, status.Errorf(codes.NotFound, "Channel is not found")
+	}
+
+	// query the user channel by user id and channel id
+	uc, err := e.handler.FindUserChannelByUK(userID, u.ChannelID)
+	if err != nil {
+		log.Errorf("Find user-channel by user_id %s, channel_id %s: %v", userID, u.ChannelID, err)
+		return nil, status.Errorf(codes.Internal, "Find user-channel: %v", err)
+	}
+	if uc == nil {
+		return nil, status.Errorf(codes.NotFound, "User-channel is not found")
+	}
+	if uc.Owned {
+		return nil, status.Errorf(codes.PermissionDenied, "Delete owned user-channel")
+	}
+
+	// delete the user channel by user id and channel id
+	if err := e.handler.DeleteUserChannelByUK(userID, u.ChannelID); err != nil {
+		log.Errorf("Delete user-channel by user_id %s, channel_id %s: %v", userID, u.ChannelID, err)
+		return nil, status.Errorf(codes.Internal, "Delete user-channel: %v", err)
+	}
+
+	return &SuccessReply{}, nil
 }

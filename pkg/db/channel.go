@@ -13,11 +13,11 @@ const (
 	TableUserChannel = "users_channels"
 )
 
-// FindChannelByName queries the user by 'name'
+// FindChannelByName queries the channel by 'name'
 func (s *Handler) FindChannelByName(name string) (*model.Channel, error) {
 	u := model.Channel{}
 
-	// query the user rows by email
+	// query the channel rows by channel name
 	res := s.db.Table(TableChannel).Where("name = ?", name).First(&u)
 	if res.Error != nil {
 		// if there is no record found
@@ -30,11 +30,28 @@ func (s *Handler) FindChannelByName(name string) (*model.Channel, error) {
 	return &u, nil
 }
 
-// FindChannelByID queries the user by unique key 'channel_id'
+// FindChannelByLikeName queries the channel by  ike 'name'
+func (s *Handler) FindChannelsByLikeName(input string) ([]model.Channel, error) {
+	u := []model.Channel{}
+
+	// query the channel rows by like channel name
+	res := s.db.Table(TableChannel).Where("name like ?", "%"+input+"%").Find(&u)
+	if res.Error != nil {
+		// if there is no record found
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, res.Error
+	}
+
+	return u, nil
+}
+
+// FindChannelByID queries the channels by unique key 'channel_id'
 func (s *Handler) FindChannelByUK(channelID string) (*model.Channel, error) {
 	u := model.Channel{}
 
-	// query the user rows by user id
+	// query the channel rows by channel id
 	res := s.db.Table(TableChannel).Where("channel_id = ?", channelID).First(&u)
 	if res.Error != nil {
 		// if there is no record found
@@ -51,7 +68,7 @@ func (s *Handler) FindChannelByUK(channelID string) (*model.Channel, error) {
 func (s *Handler) FindChannelsByUser(userID string) ([]model.Channel, error) {
 	u := []model.Channel{}
 
-	// query the channel rows by user id
+	// query the channel rows by channel id
 	res := s.db.Table(TableChannel).Where("user_id = ?", userID).Find(&u)
 	if res.Error != nil {
 		// if there is no record found
@@ -74,11 +91,11 @@ func (s *Handler) CreateUserChannel(u *model.UserChannel) error {
 	return s.db.Table(TableUserChannel).Create(u).Error
 }
 
-// FindUserChannelByUK queries the user
+// FindUserChannelByUK queries the user channel by unique key 'user_id' and 'channel_id'
 func (s *Handler) FindUserChannelByUK(userID string, channelID string) (*model.UserChannel, error) {
 	u := model.UserChannel{}
 
-	// query the user rows by user id
+	// query the user channel rows by user id and channel id
 	res := s.db.Table(TableUserChannel).
 		Where("user_id = ?", userID).
 		Where("channel_id = ?", channelID).
@@ -94,11 +111,29 @@ func (s *Handler) FindUserChannelByUK(userID string, channelID string) (*model.U
 	return &u, nil
 }
 
+// DeleteUserChannelByUK deletes the user channel by unique key 'user_id' and 'channel_id'
+func (s *Handler) DeleteUserChannelByUK(userID string, channelID string) error {
+	u := model.UserChannel{}
+	res := s.db.Table(TableUserChannel).
+		Where("user_id = ?", userID).
+		Where("channel_id = ?", channelID).
+		Delete(u)
+
+	if res.Error != nil {
+		// if there is no record found
+		if res.Error == gorm.ErrRecordNotFound {
+			return nil
+		}
+		return res.Error
+	}
+	return nil
+}
+
 // FindUserChannelsByUser queries the user's owned and joined channels by 'user_id'
 func (s *Handler) FindUserChannelsByUser(userID string) ([]model.UserChannel, error) {
 	u := []model.UserChannel{}
 
-	// query the user rows by user id
+	// query the user channel rows by user id
 	res := s.db.Table(TableUserChannel).Where("user_id = ?", userID).Find(&u)
 	if res.Error != nil {
 		// if there is no record found
