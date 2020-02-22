@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 )
 
 var (
@@ -35,4 +36,15 @@ func (s *apiExecutor) getUserId(ctx context.Context) string {
 // create a new uuid
 func newUUID() string {
 	return uuid.Must(uuid.NewV4()).String()
+}
+
+// get the peer address from stream
+func peerAddr(ctx context.Context) string {
+	// the peer information
+	info, ok := peer.FromContext(ctx)
+	addr := "0.0.0.0"
+	if ok {
+		addr = info.Addr.String()
+	}
+	return addr
 }

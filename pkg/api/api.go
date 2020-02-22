@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -62,6 +62,7 @@ func (s *Service) Start(wg *sync.WaitGroup) {
 		panic(err)
 	}
 
+	// start a goroutine for grpc serve
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -69,14 +70,19 @@ func (s *Service) Start(wg *sync.WaitGroup) {
 			log.Infof("grpc serve: %v\n", err)
 		}
 	}()
+
+	// start the goroutines for pushing messages
+	s.executor.startPush(wg)
+	// check if the goroutines are ready
+	s.executor.isReady()
 }
 
 // Stop releases the GRPC server's resources
 func (s *Service) Stop() {
-	if s.server != nil {
-		s.server.GracefulStop()
-	}
 	if s.executor != nil {
 		s.executor.close()
+	}
+	if s.server != nil {
+		s.server.GracefulStop()
 	}
 }

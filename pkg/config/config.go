@@ -9,8 +9,12 @@ import (
 
 // server fields
 type serverStruct struct {
-	ListenAddr  string        `yaml:"listen_addr"`
-	TokenExpire time.Duration `yaml:"token_expire"`
+	ListenAddr     string        `yaml:"listen_addr"`
+	TokenExpire    time.Duration `yaml:"token_expire"`
+	PushRoutines   int           `yaml:"push_routines"`
+	QueueSize      int           `yaml:"queue_size"`
+	PushDelayTime  time.Duration `yaml:"push_delay_time"`
+	PublishTimeout time.Duration `yaml:"publish_timeout"`
 }
 
 // db fields

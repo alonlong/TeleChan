@@ -58,10 +58,52 @@ message LeaveChanRequest {
     string name = 1;
 }
 
+message Connect {
+}
+
+message Disconnect {
+}
+
+message PublishRequest {
+    string name = 1; // Channel name
+    string content = 2; // Message content
+}
+
+message MessageData {
+    string name = 1; // Channel name
+    int32 seq = 2;
+    string content = 3;
+}
+
+message Ping {
+    uint64 timestamp = 1; // Milliseconds since epch. 
+}
+
+message Pong {
+    uint64 timestamp = 1;
+}
+
 message ClientUpdate {
+    oneof message {
+        // must send this first
+        Connect up = 1;
+
+        // ping for the network roundtrip
+        Ping ping = 2;
+
+        // send when client exit
+        Disconnect down = 3;
+    }
 }
 
 message ServerUpdate {
+    oneof message {
+        // pushing message from server
+        MessageData data = 1;
+
+        // response for the ping message
+        Pong pong = 2;
+    }
 }
 
 service TeleChan {
@@ -72,9 +114,9 @@ service TeleChan {
     rpc NewChan (NewChanRequest) returns (SuccessReply) {}
     rpc JoinChan (JoinChanRequest) returns (SuccessReply) {}
     rpc GetChans (GetChansRequest) returns (ChansReply) {}
-    rpc SearchChans(SearchChansRequest) returns (ChansReply) {}
-    rpc LeaveChan(LeaveChanRequest) returns (SuccessReply) {}
-    
+    rpc SearchChans (SearchChansRequest) returns (ChansReply) {}
+    rpc LeaveChan (LeaveChanRequest) returns (SuccessReply) {}
+    rpc Publish (PublishRequest) returns (SuccessReply) {}
+
     rpc Communicate(stream ClientUpdate) returns (stream ServerUpdate) {}
-    // rpc Publish(PublishRequest) returns (PublishReply) {}
 }

@@ -1,6 +1,10 @@
 server:
   listen_addr: "0.0.0.0:15001" # the grpc listen address
   token_expire: 60 # the expire time for the user's token(unit: minute)
+  push_routines: 5 # number of the goroutines, for pushing messages(default 5)
+  queue_size: 1048576 # queue size for bufferring the push messages
+  push_delay_time: 5 # waiting for handling left messages in queue when receive exit signals(default 5s)
+  publish_timeout: 3 # the timeout for publishing
 
 mysql:
   user: "root" # the username for database

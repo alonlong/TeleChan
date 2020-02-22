@@ -21,3 +21,16 @@ type UserChannel struct {
 	Name      string // the channel name
 	Owned     bool   // user owned or joined the channel
 }
+
+// Message represents the database model for table 'messages'
+type Message struct {
+	ID      int32    // the message sequence number
+	Content string // the message content
+}
+
+// ChannelMessage represents the database model for table 'channels_messages'
+type ChannelMessage struct {
+	ChannelID string // the channel id
+	MessageID int32  // the sequence number of message
+	Brief     string // the brief of message content
+}

@@ -3,7 +3,9 @@ package api
 import (
 	"TeleChan/pkg/config"
 	"TeleChan/pkg/db"
+	"TeleChan/pkg/log"
 	"context"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -25,14 +27,28 @@ var (
 type apiExecutor struct {
 	UnimplementedTeleChanServer
 
-	settings *config.Config // settings for the server
-	handler  *db.Handler    // handler for db operation
-	closed   chan struct{}  // receive a close signal
+	settings *config.Config         // settings for the server
+	handler  *db.Handler            // handler for db operation
+	closed   chan struct{}          // receive a close signal
+	users    map[string]*Connection // user's connections
+	userMux  sync.RWMutex           // mutex for users
+	ready    chan struct{}          // mark the push goroutines ready
+	messages chan []*Carrier        // queue for pushing messages
 }
 
 // newAPIExecutor returns the api methods executor
 func newAPIExecutor(settings *config.Config) *apiExecutor {
-	e := &apiExecutor{settings: settings}
+	e := &apiExecutor{
+		users:    make(map[string]*Connection),
+		closed:   make(chan struct{}),
+		settings: settings,
+	}
+
+	// init the ready channel for starting goroutines
+	e.ready = make(chan struct{}, e.settings.Server.PushRoutines)
+
+	// init the queue for pushing messages
+	e.messages = make(chan []*Carrier, e.settings.Server.QueueSize)
 
 	// init the database handler
 	e.handler = db.NewHandler(settings)
@@ -85,8 +101,28 @@ func (e *apiExecutor) auth(ctx context.Context) (context.Context, error) {
 	return newCtx, nil
 }
 
+// start the goroutines for pushing messages
+func (e *apiExecutor) startPush(wg *sync.WaitGroup) {
+	// start a goroutin pool for pushing messages
+	for i := 0; i < e.settings.Server.PushRoutines; i++ {
+		wg.Add(1)
+		go e.handlePush(wg)
+	}
+}
+
+// isReady check if the push goroutines are ready
+func (e *apiExecutor) isReady() {
+	for i := 0; i < e.settings.Server.PushRoutines; i++ {
+		<-e.ready
+	}
+	log.Info("push goroutines are ready")
+}
+
 // close the database connections and other resources
 func (e *apiExecutor) close() {
+	if e.closed != nil {
+		close(e.closed)
+	}
 	if e.handler != nil {
 		e.handler.Close()
 	}

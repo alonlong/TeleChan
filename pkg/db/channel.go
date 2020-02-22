@@ -145,3 +145,23 @@ func (s *Handler) FindUserChannelsByUser(userID string) ([]model.UserChannel, er
 
 	return u, nil
 }
+
+// FindJoinedUsersByChannel queries the users who joined the channel by 'channel_id'
+func (s *Handler) FindJoinedUsersByChannel(channelID string) ([]model.UserChannel, error) {
+	u := []model.UserChannel{}
+
+	// query the users rows by channel id
+	res := s.db.Table(TableUserChannel).
+		Where("channel_id = ?", channelID).
+		Where("owned = ?", false).
+		Find(&u)
+	if res.Error != nil {
+		// if there is no record found
+		if res.Error == gorm.ErrRecordNotFound {
+			return u, nil
+		}
+		return nil, res.Error
+	}
+
+	return u, nil
+}
